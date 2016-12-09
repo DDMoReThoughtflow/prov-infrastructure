@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+################################################################################
+# Copyright (C) 2016 Mango Business Solutions Ltd, [http://www.mango-solutions.com]
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+# for more details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with this program. If not, see <http://www.gnu.org/licenses/agpl-3.0.html>.
+################################################################################
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:file="http://www.springframework.org/schema/integration/file"
+	xmlns:feed="http://www.springframework.org/schema/integration/feed"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-kafka="http://www.springframework.org/schema/integration/kafka"
+	xmlns:script="http://www.springframework.org/schema/integration/scripting"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/script http://www.springframework.org/schema/integration/script.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/kafka http://www.springframework.org/schema/integration/kafka/spring-integration-kafka.xsd">
+
+
+	<int:annotation-config />
+
+	<!-- Inbound/Outbound Channels -->
+	<int:channel id="inboundChannel">
+	    <int:interceptors>
+	        <int:wire-tap channel="logger" />
+	    </int:interceptors>
+	</int:channel>
+
+	<int:channel id="githubHookRequestChannel"/>
+	<int:channel id="bitbucketHookRequestChannel"/>
+	<int:channel id="gitlabHookRequestChannel"/>
+	<int:channel id="renoirNativeRequestChannel"/>
+
+	<int:channel id="outboundChannel"/>
+
+	<!-- Global inteceptors -->
+
+	<!-- Convert message to provenance message payload -->
+	<int:channel-interceptor pattern="inboundChannel" order="1">
+	    <bean class="com.mango.prov.spring.ProvPayloadMessageInterceptor"/>
+	</int:channel-interceptor>
+
+	<!-- Add trace information onto the message -->
+	<int:channel-interceptor pattern="inboundChannel, outboundChannel" order="2">
+	    <bean class="com.mango.prov.spring.ProvTraceInterceptor" >
+	    	<constructor-arg value="${spring.application.name:renoir}"/>
+	    </bean>
+	</int:channel-interceptor>
+
+	<int-http:inbound-channel-adapter
+		id="inboundGitHookAdapter"
+		channel="inboundChannel"
+		supported-methods="GET, POST"
+		path="/hooks/git"
+		mapped-request-headers="X-*, HTTP_REQUEST_HEADERS"
+		request-payload-type="java.util.HashMap"
+		>
+
+	</int-http:inbound-channel-adapter>
+
+	<!-- TODO need to add in error handling, currently defaulting to the built in error channel -->
+	<int:recipient-list-router id="gitHookRequestRouter" input-channel="inboundChannel">
+	    <int:recipient channel="githubHookRequestChannel" selector-expression="headers.containsKey('x-github-event') and headers['x-github-event'] == 'push'"/>
+	    <int:recipient channel="bitbucketHookRequestChannel" selector-expression="headers.containsKey('x-event-key') and headers['x-event-key'] == 'repo:push'"/>
+        <!-- consider adding a transformation that will convert all X-* headers to lower case -->
+	    <int:recipient channel="gitlabHookRequestChannel" selector-expression="(headers.containsKey('x-gitlab-event') and headers['x-gitlab-event'] == 'Push Hook') or (headers.containsKey('X-Gitlab-Event') and headers['X-Gitlab-Event'] == 'Push Hook') or (headers.containsKey('X-Gitlab-Event') and headers['X-Gitlab-Event'] == 'System Hook' and #jsonPath(payload.payload, '$.event_name') == 'push')"/>
+	    <int:recipient channel="renoirNativeRequestChannel" selector-expression="headers.containsKey('x-renoir-vcs-event') and headers['x-renoir-vcs-event'] == 'push'"/>
+	</int:recipient-list-router>
+
+
+	<!--
+		Marks up the headers with bitbucket details e.g.:
+			vcs-previous-commit=aff22234b5c9474414c5cc7dd7f5db2b111ad0e7
+			vcs-latest-commit=c15a94192f6313badb17790138d70fc80da6635d
+			vcs-repo=https://github.com/username/repository
+			vcs-branch-name=refs/heads/master
+			vcs-server-implementation=github
+	-->
+	<int:header-enricher input-channel="githubHookRequestChannel" output-channel="outboundChannel">
+	     <int:header name="vcs-repo" expression="#jsonPath(payload.payload, '$.repository.svn_url')"/>
+	     <int:header name="vcs-latest-commit" expression="#jsonPath(payload.payload, '$.after')"/>
+	     <int:header name="vcs-previous-commit" expression="#jsonPath(payload.payload, '$.before')"/>
+	     <int:header name="vcs-branch-name" expression="#jsonPath(payload.payload, '$.ref')"/>
+	     <int:header name="vcs-server-implementation" value="github"/>
+	     <int:header name="vcs-event" value="push"/>
+	     <int:header name="vcs-type" value="git"/>
+	</int:header-enricher>
+
+
+	<!--
+		Marks up the headers with bitbucket details e.g.:
+			vcs-previous-commit=4a7cca5e61ce00ad150b67d2803dafb23c46bdca
+			vcs-latest-commit=e9a57fbf889d71b379ce45d03ff26b5625e343b8
+			vcs-repo=https://bitbucket.org/username/repository
+			vcs-branch-name=master
+			vcs-server-implementation=bitbucket
+		ISSUES:
+		 	not sure about the [0] on the changes array needs more investigation
+		 	branch name is different to gitlab and github
+	 -->
+
+	<int:header-enricher input-channel="bitbucketHookRequestChannel" output-channel="outboundChannel">
+	     <int:header name="vcs-repo" expression="#jsonPath(payload.payload, '$.repository.links.html.href')"/>
+	     <int:header name="vcs-latest-commit" expression="#jsonPath(payload.payload, '$.push.changes[0].new.target.hash')"/>
+	     <int:header name="vcs-previous-commit" expression="#jsonPath(payload.payload, '$.push.changes[0].old.target.hash')"/>
+	     <int:header name="vcs-branch-name" expression="#jsonPath(payload.payload, '$.push.changes[0].new.name')"/>
+	     <int:header name="vcs-server-implementation" value="bitbucket"/>
+	     <int:header name="vcs-event" value="push"/>
+	     <int:header name="vcs-type" value="git"/>
+	</int:header-enricher>
+
+
+	<!--
+		Marks up the headers with gitlab details e.g.:
+			vcs-previous-commit=198a2dcf64b6159702cf425ec0b94ccf1a2dbda8
+			vcs-server-implementation=gitlab
+			vcs-latest-commit=19cacc83bd0ce615213939edaf60f13882635fd7
+			vcs-repo=http://gitlab.com/username/repository.git
+			vcs-branch-name=refs/heads/master
+		ISSUES:
+			repo url ends in .git, probably should remove that off the end
+	 -->
+
+	<int:header-enricher input-channel="gitlabHookRequestChannel" output-channel="outboundChannel">
+	     <int:header name="vcs-repo" expression="#jsonPath(payload.payload, '$.repository.git_http_url')"/>
+	     <int:header name="vcs-latest-commit" expression="#jsonPath(payload.payload, '$.after')"/>
+	     <int:header name="vcs-previous-commit" expression="#jsonPath(payload.payload, '$.before')"/>
+	     <int:header name="vcs-branch-name" expression="#jsonPath(payload.payload, '$.ref')"/>
+	     <int:header name="vcs-server-implementation" value="gitlab"/>
+	     <int:header name="vcs-event" value="push"/>
+	     <int:header name="vcs-type" value="git"/>
+	</int:header-enricher>
+
+
+	<!--
+		Marks up the headers with native renoir details e.g.:
+			vcs-previous-commit=aff22234b5c9474414c5cc7dd7f5db2b111ad0e7
+			vcs-latest-commit=c15a94192f6313badb17790138d70fc80da6635d
+			vcs-repo=https://github.com/username/repository
+			vcs-branch-name=refs/heads/master
+			vcs-server-implementation=github
+	-->
+	<int:header-enricher input-channel="renoirNativeRequestChannel" output-channel="outboundChannel">
+	     <int:header name="vcs-repo" expression="headers['x-renoir-vcs-repo']"/>
+	     <int:header name="vcs-latest-commit" expression="headers['x-renoir-vcs-latest-commit']"/>
+	     <int:header name="vcs-previous-commit" expression="headers['x-renoir-vcs-previous-commit']"/>
+	     <int:header name="vcs-branch-name" expression="headers['x-renoir-vcs-branch-name']"/>
+	     <int:header name="vcs-server-implementation" expression="headers['x-renoir-vcs-server-implementation']"/>
+	     <int:header name="vcs-event" expression="headers['x-renoir-vcs-event']"/>
+	     <int:header name="vcs-type" expression="headers['x-renoir-vcs-type']"/>
+	</int:header-enricher>
+
+
+
+	<int:chain input-channel="outboundChannel">
+		<!-- transform the message into a map -->
+		<int:transformer ref="headersToPayloadTransformer"></int:transformer>
+		<!-- transform the map into a json string -->
+		<int-kafka:outbound-channel-adapter
+			id="kafkaOutboundChannelAdapter" kafka-producer-context-ref="kafkaProducerContext"
+			topic="${kafka.message.topic}" message-key="#headers[vcs-repo]#headers[vcs-type]">
+		</int-kafka:outbound-channel-adapter>
+	</int:chain>
+
+	<int:logging-channel-adapter id="logger" level="DEBUG" log-full-message="true"/>
+
+	<int-kafka:producer-context id="kafkaProducerContext">
+		<int-kafka:producer-configurations>
+			<int-kafka:producer-configuration
+				broker-list="${kafka.broker.address}"
+				key-class-type="java.lang.String"
+				value-class-type="com.mango.prov.messaging.Parcel"
+				topic="${kafka.message.topic}"
+				key-serializer="kafkaStringSerialiser"
+				value-serializer="kafkaJsonSerialiser"
+				compression-type="none" />
+		</int-kafka:producer-configurations>
+	</int-kafka:producer-context>
+
+	<bean id="kafkaJsonSerialiser" class="com.mango.prov.kafka.KafkaJsonSerializer">
+	</bean>
+
+	<bean id="kafkaStringSerialiser" class="org.apache.kafka.common.serialization.StringSerializer">
+	</bean>
+
+
+</beans>

@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://mango-solutions.com/prov/activityrecord",
+  "type": "object",
+  "properties": {
+    "id": {
+      "id": "http://mango-solutions.com/prov/activityrecord/id",
+      "type": "string"
+    },
+    "activityId": {
+      "id": "http://mango-solutions.com/prov/activityrecord/activityId",
+      "type": "string"
+    },
+    "type": {
+      "id": "http://mango-solutions.com/prov/activityrecord/type",
+      "type": "string",
+      "enum": [
+        "INPUT",
+        "OUTPUT",
+        "START",
+        "END",
+        "OTHER",
+        "PLAN",
+        "AGENT",
+        "USER"
+      ]
+    },
+    "date": {
+      "id": "http://mango-solutions.com/prov/activityrecord/date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "activityId",
+    "type"
+  ]
+}
+
+/*
+{
+  "activityId": "",
+  "type": "",
+  "date": ""
+}
+*/

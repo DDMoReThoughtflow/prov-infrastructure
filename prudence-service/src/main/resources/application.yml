@@ -1,0 +1,60 @@
+################################################################################
+# Copyright (C) 2016 Mango Business Solutions Ltd, [http://www.mango-solutions.com]
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+# for more details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with this program. If not, see <http://www.gnu.org/licenses/agpl-3.0.html>.
+################################################################################
+server:
+    port: 10040
+
+kafka:
+  broker:
+    address: localhost:9092
+  zookeeper:
+    connect:
+      address: localhost:2181
+      timeout: 6000
+    session:
+      timeout: 6000
+    sync:
+      time: 2000
+  message:
+    consumer:
+      topic:
+        name: provenance
+        streams: 4
+      max: 10
+      group: prudence
+
+provstore:
+  urls:
+    base: https://provenance.ecs.soton.ac.uk/store/
+  requests:
+    create:
+      url: ${provstore.urls.base}api/v0/documents/
+      method: POST
+  credentials:
+      username: <provstore-username>
+      apikey: <provstore-apikey>
+info:
+  version: 1.0
+  stage: dev
+
+spring:
+  application:
+    name: prudence
+#  boot:
+#    admin:
+#      url: http://localhost:10000
+  cloud:
+    config:
+      enabled: false

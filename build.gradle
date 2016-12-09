@@ -1,0 +1,180 @@
+/*******************************************************************************
+* Copyright (C) 2016 Mango Business Solutions Ltd, [http://www.mango-solutions.com]
+*
+* This program is free software: you can redistribute it and/or modify it under
+* the terms of the GNU Affero General Public License as published by the
+* Free Software Foundation, version 3.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+* or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+* for more details.
+*
+* You should have received a copy of the GNU Affero General Public License along
+* with this program. If not, see <http://www.gnu.org/licenses/agpl-3.0.html>.
+*******************************************************************************/
+
+buildscript {
+    repositories {
+      maven {
+         url "https://plugins.gradle.org/m2/"
+      }
+      maven {
+        url "http://jcenter.bintray.com/"
+      }
+
+    }
+    dependencies {
+      classpath "org.springframework.boot:spring-boot-gradle-plugin:1.3.3.RELEASE"
+      classpath "io.spring.gradle:dependency-management-plugin:0.5.6.RELEASE"
+      classpath 'com.netflix.nebula:gradle-ospackage-plugin:3.4.0'
+      classpath 'com.netflix.nebula:gradle-info-plugin:3.0.3'
+      classpath "pl.allegro.tech.build:axion-release-plugin:1.3.4"
+      classpath "com.netflix.nebula:nebula-project-plugin:3.0.4"
+    }
+}
+
+apply plugin: "pl.allegro.tech.build.axion-release"
+
+
+scmVersion {
+    tag {
+        prefix = 'release-'
+    }
+}
+
+allprojects {
+  repositories {
+    maven {
+      url "http://jcenter.bintray.com/"
+    }
+  }
+
+  group = 'com.mango.provenance'
+  project.version = scmVersion.version
+}
+
+configure(subprojects.findAll {it.name =~ /.*service/ || it.name =~ /.*lib/ }) {
+  apply plugin: 'java'
+  apply plugin: 'groovy'
+  apply plugin: "io.spring.dependency-management"
+  apply plugin: 'eclipse'
+  apply plugin: 'nebula.info'
+  apply plugin: 'nebula.integtest'
+  apply plugin: 'maven'
+  apply plugin: 'maven-publish'
+
+
+
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+  dependencyManagement {
+    imports {
+      mavenBom 'org.springframework.boot:spring-boot-starter-parent:1.3.3.RELEASE'
+    }
+  }
+
+  //Exclude the log4j dependencies as will use logback
+  configurations {
+    all*.exclude group: 'log4j', module: 'log4j'
+    all*.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    all*.exclude module: "spring-boot-starter-tomcat"
+  }
+
+  task sourcesJar(type: Jar, dependsOn: classes) {
+      classifier = 'sources'
+      from sourceSets.main.allSource
+  }
+
+  task javadocJar(type: Jar, dependsOn: javadoc) {
+      classifier = 'javadoc'
+      from javadoc.destinationDir
+  }
+
+  artifacts {
+      archives sourcesJar
+      archives javadocJar
+  }
+
+  project.tasks.findAll {
+    it.name.startsWith("publish")
+  }.each {
+    it.dependsOn assemble
+  }
+
+  publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+    repositories {
+        maven {
+            // change to point to your repo, e.g. http://my.org/repo
+            url = project.hasProperty("mavenRepo")? mavenRepo: "$buildDir/repo";
+            credentials {
+              username=project.hasProperty("mavenUser")? mavenUser: "";
+              password=project.hasProperty("mavenPassword")? mavenPassword: "";
+            }
+        }
+    }
+  }
+}
+
+configure(subprojects.findAll {it.name =~ /.*service/}) {
+  apply plugin: 'spring-boot'
+  apply plugin: 'nebula.ospackage'
+
+  springBoot {
+      executable = true
+  }
+
+  ext.installPath='/opt/mango/provenance/' + archivesBaseName
+  ext.jarPath=installPath + '/' + archivesBaseName + '-' + scmVersion.version + '.jar'
+  ext.initPath='/etc/init.d/' + archivesBaseName
+
+  dependencies {
+    compile("org.springframework.boot:spring-boot-starter-undertow:1.3.3.RELEASE")
+  }
+
+  artifacts {
+    archives buildRpm
+  }
+
+  ospackage {
+  	packageName = archivesBaseName
+  	version = project.version.replaceAll("-", ".")
+  	release = 1
+  	arch = NOARCH
+  	os = LINUX
+    user = "prov"
+    group = "prov"
+
+  	into installPath
+
+  	from(jar.outputs.files) {
+  		fileMode 0500
+  	}
+
+    link(initPath, jarPath)
+
+  }
+
+
+  task distRpm(type: Rpm, dependsOn: bootRepackage) {
+
+  }
+  assemble.dependsOn distRpm
+
+  publishing {
+    publications {
+        mavenRpm(MavenPublication) {
+            artifact buildRpm
+        }
+    }
+  }
+
+}

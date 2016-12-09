@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://mango-solutions.com/packet",
+  "type": "object",
+  "properties": {
+    "meta": {
+      "id": "http://mango-solutions.com/packet/meta",
+      "type": "object",
+      "properties": {
+        "trace": {
+          "id": "http://mango-solutions.com/packet/meta/trace",
+          "type": "object",
+          "properties": {
+            "id": {
+              "id": "http://mango-solutions.com/packet/meta/trace/id",
+              "type": "string",
+              "name": "id",
+              "title": "The Trace ID",
+              "description": "The current trace id if there is one.",
+              "default": ""
+            }
+          },
+        },
+        "required": [],
+        "name": "trace",
+        "title": "Packet Trace Information",
+        "description": "Container in the meta section containing trace information for the payload."
+      },
+      "required": [],
+      "name": "meta",
+      "title": "Meta Information",
+      "description": "Container for meta data information about"
+    },
+    "payload": {
+      "id": "http://mango-solutions.com/packet/payload",
+      "type": "object",
+      "properties": {
+        "activity": {
+          "id": "http://mango-solutions.com/packet/payload/activity",
+          "type": "object",
+          "properties": {
+            "id": {
+              "id": "http://mango-solutions.com/packet/payload/activity/id",
+              "type": "string"
+            },
+            "start": {
+              "id": "http://mango-solutions.com/packet/payload/activity/start",
+              "type": "string",
+              "description": "End time formatted as an ISO-8601 date time string."
+            },
+            "end": {
+              "id": "http://mango-solutions.com/packet/payload/activity/end",
+              "type": "string",
+              "description": "End time formatted as an ISO-8601 date time string."
+            },
+            "records": {
+              "id": "http://mango-solutions.com/packet/payload/activity/records",
+              "type": "array",
+              "items": {
+                "id": "http://mango-solutions.com/packet/payload/activity/records/0",
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "meta",
+    "payload"
+  ],
+  "name": "packet",
+  "description": "Message packet containing the payload (the actual message) and meta information about the request.",
+  "additionalProperties": true,
+  "title": "Message Packet"
+}
+
+/*
+{
+  "meta": {},
+  "payload": {
+    "activity": {
+      "id": "dasasd",
+      "start": "2015-01-01",
+      "end": "2015-01-01",
+      "records": [
+        {}
+      ]
+    }
+  }
+}
+*/

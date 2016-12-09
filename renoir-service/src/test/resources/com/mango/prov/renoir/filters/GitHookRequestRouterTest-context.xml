@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+################################################################################
+# Copyright (C) 2016 Mango Business Solutions Ltd, [http://www.mango-solutions.com]
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+# for more details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with this program. If not, see <http://www.gnu.org/licenses/agpl-3.0.html>.
+################################################################################
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:int="http://www.springframework.org/schema/integration"
+    xmlns:file="http://www.springframework.org/schema/integration/file"
+    xmlns:feed="http://www.springframework.org/schema/integration/feed"
+    xmlns:int-http="http://www.springframework.org/schema/integration/http"
+    xmlns:int-kafka="http://www.springframework.org/schema/integration/kafka"
+    xmlns:script="http://www.springframework.org/schema/integration/scripting"
+    xsi:schemaLocation="http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed.xsd
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/integration/script http://www.springframework.org/schema/integration/script.xsd
+        http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file.xsd
+        http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
+        http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+        http://www.springframework.org/schema/integration/kafka http://www.springframework.org/schema/integration/kafka/spring-integration-kafka.xsd">
+
+<!-- This is a copy of what is there in main spring-integration-context.xml, ideally we would bean defined in a single spring context file
+and import it here and there, but STS graphical editor is unable to display the integration diagram correctly -->
+
+<!-- Can't externalize the selector-expression to properties as for some reason in test context these are not correctly parsed ('${}' are parsed as SpEL not properties reference...)
+     Interestingly this is not the case for normal execution, then external properties are correctly injected...
+ -->
+    <int:recipient-list-router id="gitHookRequestRouter" input-channel="inboundChannel">
+	    <int:recipient channel="githubHookRequestChannel" selector-expression="headers.containsKey('x-github-event') and headers['x-github-event'] == 'push'"/>
+	    <int:recipient channel="bitbucketHookRequestChannel" selector-expression="headers.containsKey('x-event-key') and headers['x-event-key'] == 'repo:push'"/>
+        <!-- consider adding a transformation that will convert all X-* headers to lower case -->
+	    <int:recipient channel="gitlabHookRequestChannel" selector-expression="(headers.containsKey('x-gitlab-event') and headers['x-gitlab-event'] == 'Push Hook') or (headers.containsKey('X-Gitlab-Event') and headers['X-Gitlab-Event'] == 'Push Hook') or (headers.containsKey('X-Gitlab-Event') and headers['X-Gitlab-Event'] == 'System Hook' and #jsonPath(payload.payload, '$.event_name') == 'push')"/>
+	    <int:recipient channel="renoirNativeRequestChannel" selector-expression="headers.containsKey('x-renoir-vcs-event') and headers['x-renoir-vcs-event'] == 'push'"/>
+    </int:recipient-list-router>
+
+    <int:channel id="githubHookRequestChannel"/>
+    <int:channel id="bitbucketHookRequestChannel"/>
+    <int:channel id="gitlabHookRequestChannel"/>
+    <int:channel id="renoirNativeRequestChannel"/>
+
+
+
+	<int:bridge input-channel="githubHookRequestChannel"
+		output-channel="testGithubHookRequestChannel"/>
+	<int:bridge input-channel="bitbucketHookRequestChannel"
+		output-channel="testBitbucketHookRequestChannel"/>
+	<int:bridge input-channel="gitlabHookRequestChannel"
+		output-channel="testGitlabHookRequestChannel"/>
+    <int:bridge input-channel="renoirNativeRequestChannel"
+        output-channel="testRenoirNativeRequestChannel"/>
+
+	<int:channel id="testGithubHookRequestChannel">
+		<int:queue/>
+	</int:channel>
+	<int:channel id="testBitbucketHookRequestChannel">
+		<int:queue/>
+	</int:channel>
+	<int:channel id="testGitlabHookRequestChannel">
+		<int:queue/>
+	</int:channel>
+    <int:channel id="testRenoirNativeRequestChannel">
+        <int:queue/>
+    </int:channel>
+
+</beans>
