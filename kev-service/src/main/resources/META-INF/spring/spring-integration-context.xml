@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+################################################################################
+# Copyright (C) 2016 Mango Business Solutions Ltd, [http://www.mango-solutions.com]
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+# for more details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with this program. If not, see <http://www.gnu.org/licenses/agpl-3.0.html>.
+################################################################################
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:file="http://www.springframework.org/schema/integration/file"
+	xmlns:feed="http://www.springframework.org/schema/integration/feed"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-kafka="http://www.springframework.org/schema/integration/kafka"
+	xmlns:script="http://www.springframework.org/schema/integration/scripting"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/script http://www.springframework.org/schema/integration/script.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/kafka http://www.springframework.org/schema/integration/kafka/spring-integration-kafka.xsd">
+
+
+	<int:annotation-config />
+
+	<!-- Inbound/Outbound Channels -->
+	<int:channel id="inboundChannel">
+	    <int:interceptors>
+	        <int:wire-tap channel="logger" />
+	    </int:interceptors>
+	</int:channel>
+
+	<int:channel id="outboundChannel"/>
+
+		<!-- Convert message to provenance message payload -->
+	<int:channel-interceptor pattern="inboundChannel" order="1">
+	    <bean class="com.mango.prov.spring.ProvPayloadMessageInterceptor"/>
+	</int:channel-interceptor>
+
+	<!-- Add trace information onto the message -->
+	<int:channel-interceptor pattern="inboundChannel, outboundChannel" order="2">
+	    <bean class="com.mango.prov.spring.ProvTraceInterceptor" >
+	    	<constructor-arg value="${spring.application.name:kev}"/>
+	    </bean>
+	</int:channel-interceptor>
+
+	<int:recipient-list-router id="customRouter" input-channel="inboundChannel"
+        timeout="1000"
+        ignore-send-failures="false"
+        apply-sequence="true">
+  <int:recipient channel="outboundChannel"/>
+</int:recipient-list-router>
+
+
+	<int-http:inbound-channel-adapter
+		id="inboundAdapter"
+		channel="inboundChannel"
+		supported-methods="POST"
+		path="/topics/post"
+		mapped-request-headers="X-*, HTTP_REQUEST_HEADERS"
+		request-payload-type="java.util.Map"
+		>
+		<int-http:request-mapping consumes="application/json"/>
+	</int-http:inbound-channel-adapter>
+
+
+
+	<int-kafka:outbound-channel-adapter channel="outboundChannel"
+		id="kafkaOutboundChannelAdapter" kafka-producer-context-ref="kafkaProducerContext"
+		topic-expression="headers['x-kev-topic']" message-key-expression="payload.toString()">
+	</int-kafka:outbound-channel-adapter>
+
+	<int:logging-channel-adapter id="logger" level="INFO" log-full-message="true"/>
+
+	<int-kafka:producer-context id="kafkaProducerContext">
+		<int-kafka:producer-configurations>
+			<int-kafka:producer-configuration
+				broker-list="${kafka.broker.address}"
+				key-class-type="java.lang.String"
+				value-class-type="com.mango.prov.messaging.Parcel"
+				topic="${kafka.message.topic}"
+				key-serializer="kafkaStringSerialiser"
+				value-serializer="kafkaJsonSerialiser"
+				compression-type="none" />
+		</int-kafka:producer-configurations>
+	</int-kafka:producer-context>
+
+	<bean id="kafkaJsonSerialiser" class="com.mango.prov.kafka.KafkaJsonSerializer">
+	</bean>
+
+	<bean id="kafkaStringSerialiser" class="org.apache.kafka.common.serialization.StringSerializer">
+	</bean>
+
+	<bean id="kafkaJsonDeserialiser" class="com.mango.prov.kafka.KafkaJsonDeserializer">
+		<constructor-arg name="targetClass" value="com.mango.prov.messaging.Parcel"></constructor-arg>
+	</bean>
+
+	<bean id="kafkaStringDeserialiser" class="org.apache.kafka.common.serialization.StringDeserializer">
+	</bean>
+
+	<bean id="kafkaJsonDecoder" class="com.mango.prov.kafka.KafkaJsonDecoder">
+		<constructor-arg name="targetClass" value="com.mango.prov.messaging.Parcel"></constructor-arg>
+	</bean>
+
+	<bean id="kafkaJsonEncoder" class="com.mango.prov.kafka.KafkaJsonEncoder">
+	</bean>
+
+	<bean id="kafkaStringEncoder"
+		class="org.springframework.integration.kafka.serializer.common.StringEncoder">
+	</bean>
+
+	<bean id="kafkaStringDecoder"
+		class="org.springframework.integration.kafka.serializer.common.StringDecoder">
+	</bean>
+
+</beans>

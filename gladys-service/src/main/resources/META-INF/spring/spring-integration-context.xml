@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+################################################################################
+# Copyright (C) 2016 Mango Business Solutions Ltd, [http://www.mango-solutions.com]
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+# for more details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with this program. If not, see <http://www.gnu.org/licenses/agpl-3.0.html>.
+################################################################################
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:file="http://www.springframework.org/schema/integration/file"
+	xmlns:feed="http://www.springframework.org/schema/integration/feed"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-kafka="http://www.springframework.org/schema/integration/kafka"
+	xmlns:script="http://www.springframework.org/schema/integration/scripting"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/script http://www.springframework.org/schema/integration/script.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/kafka http://www.springframework.org/schema/integration/kafka/spring-integration-kafka.xsd
+		http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util.xsd">
+
+
+	<int:annotation-config />
+
+	<!-- TODO make the settings configurable. -->
+
+	<!-- Inbound/Outbound Channels -->
+	<int:channel id="kafkaInboundChannel">
+		<int:interceptors>
+			<int:wire-tap channel="logger" />
+		</int:interceptors>
+	</int:channel>
+	<int:channel id="inboundChannel"/>
+	<int:channel id="outboundChannel"/>
+	<int:channel id="resolverChannel" />
+
+	<!-- Convert message to provenance message payload -->
+	<int:channel-interceptor pattern="inboundChannel" order="1">
+	    <bean class="com.mango.prov.spring.ProvPayloadMessageInterceptor"/>
+	</int:channel-interceptor>
+
+	<!-- Add trace information onto the message -->
+	<int:channel-interceptor pattern="inboundChannel, outboundChannel" order="2">
+	    <bean class="com.mango.prov.spring.ProvTraceInterceptor" >
+	    	<constructor-arg value="${spring.application.name:gladys}"/>
+	    </bean>
+	</int:channel-interceptor>
+
+
+
+	<!-- TODO Should look at the other kafka adapter rather than this polling
+		one. -->
+	<int-kafka:inbound-channel-adapter
+		id="kafkaInboundChannelAdapter" kafka-consumer-context-ref="consumerContext"
+		auto-startup="true" channel="kafkaInboundChannel">
+		<int:poller fixed-delay="10" time-unit="MILLISECONDS"
+			max-messages-per-poll="5" />
+	</int-kafka:inbound-channel-adapter>
+
+	<int:splitter id="kafkaMessageSplitter" ref="mapMessageSplitter"
+		input-channel="kafkaInboundChannel" output-channel="inboundChannel" />
+
+	<int:chain input-channel="inboundChannel"
+		output-channel="resolverChannel">
+		<int:header-enricher>
+			<int:header name="vcs-repo" expression="#jsonPath(payload.payload, '$.vcs-repo')" />
+			<int:header name="vcs-latest-commit"
+				expression="#jsonPath(payload.payload, '$.vcs-latest-commit')" />
+			<int:header name="vcs-previous-commit"
+				expression="#jsonPath(payload.payload, '$.vcs-previous-commit')" />
+			<int:header name="vcs-branch-name" expression="#jsonPath(payload.payload, '$.vcs-branch-name')" />
+			<int:header name="vcs-server-implementation"
+				expression="#jsonPath(payload.payload, '$.vcs-server-implementation')" />
+			<int:header name="vcs-event" expression="#jsonPath(payload.payload, '$.vcs-event')" />
+			<int:header name="vcs-type" expression="#jsonPath(payload.payload, '$.vcs-type')" />
+		</int:header-enricher>
+		<int:splitter id="gitCommitEventSplitter" ref="gitCommitMessageSplitter" />
+	</int:chain>
+
+	<int:transformer ref="gitCommitMetadataTransformer" input-channel="resolverChannel" output-channel="outboundChannel"/>
+
+	<int:chain input-channel="outboundChannel">
+
+		<int-kafka:outbound-channel-adapter
+			id="kafkaOutboundChannelAdapter" kafka-producer-context-ref="kafkaProducerContext"
+			topic="${kafka.message.producer.topic}" message-key="${kafka.message.producer.key}">
+		</int-kafka:outbound-channel-adapter>
+	</int:chain>
+
+	<int:logging-channel-adapter id="logger"
+		level="DEBUG" log-full-message="true" />
+
+	<int-kafka:producer-context id="kafkaProducerContext">
+		<int-kafka:producer-configurations>
+			<int-kafka:producer-configuration
+				broker-list="${kafka.broker.address}"
+				topic="${kafka.message.producer.topic}"
+				key-class-type="java.lang.String"
+				key-serializer="kafkaStringSerialiser"
+				value-class-type="com.mango.prov.messaging.Parcel"
+				value-serializer="kafkaJsonSerialiser"
+				compression-type="none" />
+		</int-kafka:producer-configurations>
+	</int-kafka:producer-context>
+
+	<int-kafka:consumer-context id="consumerContext"
+		consumer-timeout="4000" zookeeper-connect="zookeeperConnect">
+		<int-kafka:consumer-configurations>
+			<int-kafka:consumer-configuration
+				group-id="${kafka.message.consumer.group:gladys}"
+
+				value-decoder="kafkaJsonDecoder"
+				key-decoder="kafkaStringDecoder"
+				max-messages="${kafka.message.consumer.max:1}">
+				<!-- TODO need to understand what the 'streams' is -->
+				<int-kafka:topic id="${kafka.message.consumer.topic.name:webhook}"
+					streams="${kafka.message.consumer.topic.streams:4}" />
+			</int-kafka:consumer-configuration>
+		</int-kafka:consumer-configurations>
+	</int-kafka:consumer-context>
+
+	<int-kafka:zookeeper-connect id="zookeeperConnect"
+		zk-connect="${kafka.zookeeper.connect.address:localhost:2181}"
+		zk-connection-timeout="${kafka.zookeeper.connect.timeout:6000}"
+		zk-session-timeout="${kafka.zookeeper.session.timeout:6000}"
+		zk-sync-time="${kafka.zookeeper.sync.time:2000}" />
+
+	<bean id="kafkaJsonSerialiser" class="com.mango.prov.kafka.KafkaJsonSerializer">
+	</bean>
+
+	<bean id="kafkaStringSerialiser" class="org.apache.kafka.common.serialization.StringSerializer">
+	</bean>
+
+	<bean id="kafkaJsonDeserialiser" class="com.mango.prov.kafka.KafkaJsonDeserializer">
+		<constructor-arg name="targetClass" value="com.mango.prov.messaging.Parcel"></constructor-arg>
+	</bean>
+
+	<bean id="kafkaStringDeserialiser" class="org.apache.kafka.common.serialization.StringDeserializer">
+	</bean>
+
+	<bean id="kafkaJsonDecoder" class="com.mango.prov.kafka.KafkaJsonDecoder">
+		<constructor-arg name="targetClass" value="com.mango.prov.messaging.Parcel"></constructor-arg>
+	</bean>
+
+	<bean id="kafkaJsonEncoder" class="com.mango.prov.kafka.KafkaJsonEncoder">
+	</bean>
+
+	<bean id="kafkaStringEncoder"
+		class="org.springframework.integration.kafka.serializer.common.StringEncoder">
+	</bean>
+
+	<bean id="kafkaStringDecoder"
+		class="org.springframework.integration.kafka.serializer.common.StringDecoder">
+	</bean>
+
+</beans>

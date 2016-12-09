@@ -1,0 +1,74 @@
+{
+  "prefix": {
+    "ddmore": "http://ddmore.eu/workflow",
+    "vcs": "http://ddmore.eu/workflow/vcs",
+    "repo": "http://git.mango.local/adunn/gitlab-hooks.git"
+  },
+
+  "bundle": {
+    "repo:63a419bfcca0f3445319a722a104598aa63ef355": {
+      "entity": {
+        "repo:4c716e5acf38b18b4028cc1252cff5348d3a17e1/README.md": {
+          "prov:type": "document",
+          "prov:time": {
+            "$": "2001-10-26T21:32:52",
+            "type": "xsd:dateTime"
+          },
+          "prov:location": "/README.md",
+          "vcs:sha1": {
+            "$": "7550d57e02797e39d666a8c0c4e25f71900406cc",
+            "type": "xsd:hexBinary"
+          },
+          "vcs:commitId": {
+            "$": "4c716e5acf38b18b4028cc1252cff5348d3a17e1",
+            "type": "xsd:hexBinary"
+          },
+          "vcs:repo": {
+            "$": "http://git.mango.local/adunn/gitlab-hooks.git",
+            "type": "xsd:string"
+          },
+          "vcs:branch": "master",
+          "vcs:message": "Corrected spelling mistake"
+        },
+        "repo:63a419bfcca0f3445319a722a104598aa63ef355/README.md": {
+        }
+      },
+      "activity": {
+      },
+      "agent": {
+        "repo:adunn": {
+           "vcs:name": "Andrew Dunn",
+           "vcs:email": "adunn@mango-solutions.com",
+           "prov:type": {
+               "$": "prov:Person",
+               "type": "xsd:QName"
+           }
+         }
+      },
+      "wasDerivedFrom": {
+        "_:revision_of_1": {
+          "prov:usedEntity": "repo:63a419bfcca0f3445319a722a104598aa63ef355/README.md",
+          "prov:generatedEntity": "repo:4c716e5acf38b18b4028cc1252cff5348d3a17e1/README.md",
+          "prov:type": {
+              "$": "prov:Revision",
+              "type": "xsd:QName"
+          }
+        }
+      },
+      "wasAttributedTo": {
+        "_:attributed_to_1": {
+            "prov:type": "authorship",
+            "prov:agent": "repo:adunn",
+            "prov:entity": "repo:4c716e5acf38b18b4028cc1252cff5348d3a17e1/README.md"
+        }
+      },
+      "mentionOf": {
+        "_:mention_of_01": {
+          "prov:specificEntity": "repo:4c716e5acf38b18b4028cc1252cff5348d3a17e1/README.md",
+          "prov:generalEntity": "repo:63a419bfcca0f3445319a722a104598aa63ef355/README.md",
+          "prov:bundle": "repo:63a419bfcca0f3445319a722a104598aa63ef355"
+        }
+      }
+    }
+  }
+}

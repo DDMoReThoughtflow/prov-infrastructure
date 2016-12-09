@@ -1,0 +1,71 @@
+{
+  "prefix": {
+    "ddmore": "http://ddmore.eu/workflow",
+    "vcs": "http://ddmore.eu/workflow/vcs",
+    "repo": "https://github.com/johndoe/examplerepo.git"
+  },
+
+  "bundle": {
+    "repo:07bc6a3f606725922aa0ec0fd0d0a7d02b7c5f35": {
+      "entity": {
+        "repo:07bc6a3f606725922aa0ec0fd0d0a7d02b7c5f35/README.md": {
+          "prov:type": "document",
+          "prov:time": "2001-10-26T21:32:52",
+          "prov:location": "/README.md",
+          "vcs:sha1": {
+            "$": "7550d57e02797e39d666a8c0c4e25f71900406cc",
+            "type": "xsd:hexBinary"
+          },
+          "vcs:commitId": {
+            "$": "07bc6a3f606725922aa0ec0fd0d0a7d02b7c5f35",
+            "type": "xsd:hexBinary"
+          },
+          "vcs:repo": {
+            "$": "https://github.com/johndoe/examplerepo.git",
+            "type": "xsd:string"
+          },
+          "vcs:branch": "master",
+          "vcs:message": "Corrected spelling mistake"
+        },
+        "repo:be03bc6d11106506ace7d54041c7fd9bbe442e97/README.md": {
+        }
+      },
+      "activity": {
+      },
+      "agent": {
+        "repo:adunn": {
+           "vcs:name": "John Doe",
+           "vcs:email": "johndoe@example.com",
+           "prov:type": {
+               "$": "prov:Person",
+               "type": "xsd:QName"
+           }
+         }
+      },
+      "wasDerivedFrom": {
+        "_:revision_of_1": {
+          "prov:usedEntity": "repo:be03bc6d11106506ace7d54041c7fd9bbe442e97/README.md",
+          "prov:generatedEntity": "repo:07bc6a3f606725922aa0ec0fd0d0a7d02b7c5f35/README.md",
+          "prov:type": {
+              "$": "prov:Revision",
+              "type": "xsd:QName"
+          }
+        }
+      },
+      "wasAttributedTo": {
+        "_:attributed_to_1": {
+            "prov:type": "authorship",
+            "prov:agent": "repo:adunn",
+            "prov:entity": "repo:07bc6a3f606725922aa0ec0fd0d0a7d02b7c5f35/README.md"
+        }
+      },
+      "mentionOf": {
+        "_:mention_of_01": {
+          "prov:specificEntity": "repo:07bc6a3f606725922aa0ec0fd0d0a7d02b7c5f35/README.md",
+          "prov:generalEntity": "repo:be03bc6d11106506ace7d54041c7fd9bbe442e97/README.md",
+          "prov:bundle": "repo:be03bc6d11106506ace7d54041c7fd9bbe442e97"
+        }
+      }
+    }
+  }
+}

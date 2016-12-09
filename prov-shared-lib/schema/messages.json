@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://mango-solutions.com/packet",
+  "type": "object",
+  "properties": {
+    "meta": {
+      "id": "http://mango-solutions.com/packet/meta",
+      "type": "object",
+      "properties": {
+        "trace": {
+          "id": "http://mango-solutions.com/packet/meta/trace",
+          "type": "object",
+          "properties": {
+            "id": {
+              "id": "http://mango-solutions.com/packet/meta/trace/id",
+              "type": "string",
+              "name": "id",
+              "title": "The Trace ID",
+              "description": "The current trace id if there is one.",
+              "default": ""
+            },
+            "spans": {
+              "id": "http://mango-solutions.com/packet/meta/trace/spans",
+              "type": "array",
+              "items": {
+                "id": "http://mango-solutions.com/packet/meta/trace/spans/0",
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "id": "http://mango-solutions.com/packet/meta/trace/spans/0/id",
+                    "type": "string",
+                    "name": "id",
+                    "title": "The Trace ID",
+                    "description": "The trace id for the span."
+                  },
+                  "in": {
+                    "id": "http://mango-solutions.com/packet/meta/trace/spans/0/in",
+                    "type": "string",
+                    "name": "in",
+                    "title": "In Date Time",
+                    "description": "The date time for the start of the span formatted as an ISO 8601 date time string"
+                  },
+                  "out": {
+                    "id": "http://mango-solutions.com/packet/meta/trace/spans/0/out",
+                    "type": "string",
+                    "name": "out",
+                    "title": "Out Date Time",
+                    "description": "The date time for the end of the span formatted as an ISO 8601 date time string"
+                  },
+                  "ip": {
+                    "id": "http://mango-solutions.com/packet/meta/trace/spans/0/ip",
+                    "type": "string",
+                    "name": "host",
+                    "title": "Host",
+                    "description": "The hostname / ip address of where the span was executed."
+                  },
+                  "name": {
+                    "id": "http://mango-solutions.com/packet/meta/trace/spans/0/name",
+                    "type": "string",
+                    "title": "Process",
+                    "name": "process",
+                    "description": "The name of the process that encompassed the span."
+                  }
+                },
+                "name": "span",
+                "title": "Span",
+                "description": "A span contains the tracking information for a request moving through the system."
+              },
+              "name": "spans",
+              "title": "Spans",
+              "description": "Container of the spans conveying trace information.",
+              "minItems": "0",
+              "additionalItems": false
+            }
+          },
+          "required": [],
+          "name": "trace",
+          "title": "Packet Trace Information",
+          "description": "Container in the meta section containing trace information for the payload."
+        }
+      },
+      "required": [],
+      "name": "meta",
+      "title": "Meta Information",
+      "description": "Container for meta data information about"
+    },
+    "payload": {
+      "id": "http://mango-solutions.com/packet/payload",
+      "type": "any",
+      "properties": {},
+      "name": "payload",
+      "title": "Payload",
+      "description": "The payload of the message."
+    }
+  },
+  "required": [
+    "meta",
+    "payload"
+  ],
+  "name": "packet",
+  "description": "Message packet containing the payload (the actual message) and meta information about the request.",
+  "additionalProperties": true,
+  "title": "Message Packet"
+}

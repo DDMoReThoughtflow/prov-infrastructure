@@ -1,0 +1,113 @@
+{{! Partials for use later on in the document}}
+{{#*inline "repoUri"}}{{#if p2}}{{> json contents=(join 'repo:' p1 '/' p2 '')}}{{else}}{{> json contents=(join 'repo:' p1 '')}}{{/if}}{{/inline}}
+{{#*inline "json"}}{{#if contents}}{{json contents}}{{else if default}}{{json default}}{{else}}""{{/if}}{{/inline}}
+
+{{! Entity Partial }}
+{{~#*inline "entityPartial"}}
+        {{> repoUri p1=payload.commitId p2=this.path}}: {
+          "prov:type": "document",
+          "prov:time": {{> json contents=payload.commitDate}},
+          "prov:location": {{> json contents=(join '/' this.path '')}},
+          "vcs:sha1": {
+            "$": {{> json contents= this.checksum}},
+            "type": "xsd:hexBinary"
+          },
+          "vcs:changeType": {{> json contents= this.changeType}},
+          "vcs:commitId": {
+            "$": {{> json contents=payload.commitId}},
+            "type": "xsd:hexBinary"
+          },
+          "vcs:repo": {
+            "$": {{> json contents=payload.repositoryUri}},
+            "type": "xsd:string"
+          },
+          "vcs:type": {
+            "$": {{> json contents=payload.repositoryType}},
+            "type": "xsd:string"
+          },
+          "vcs:branch": {
+            "$": {{> json contents=payload.branchName}},
+            "type": "xsd:string"
+          },
+          "vcs:message": {
+            "$": {{> json contents=payload.message}},
+            "type": "xsd:string"
+          }
+        }{{~#if this.previousRevision~}},
+        {{> repoUri p1=this.previousRevision p2=this.oldPath}}: {
+        }{{/if}}{{~#unless @last~}},{{/unless}}
+{{/inline}}
+
+{{#*inline "derivedFromPartial"}}
+        "_:revision_of_{{@index}}": {
+          "prov:usedEntity": {{> repoUri p1=this.previousRevision p2=this.oldPath}},
+          "prov:generatedEntity": {{> repoUri p1=payload.commitId p2=this.path}},
+          "prov:type": {
+              "$": "prov:Revision",
+              "type": "xsd:QName"
+          }
+        }
+{{/inline}}
+
+{{#*inline "attributedToPartial"}}
+        "_:attributed_to_{{@index}}": {
+            "prov:type": "authorship",
+            "prov:agent": {{> repoUri p1=payload.committer.name}},
+            "prov:entity": {{> repoUri p1=payload.commitId p2=this.path}}
+        }{{#unless @last}},{{/unless}}
+{{/inline}}
+
+{{#*inline "mentionOfPartial"}}
+        "_:mention_of_{{@index}}": {
+          "prov:specificEntity": {{> repoUri p1=payload.commitId p2=this.path}},
+          "prov:generalEntity": {{> repoUri p1=this.previousRevision p2=this.oldPath}},
+          "prov:bundle": {{> repoUri p1=this.previousRevision}}
+        }
+{{/inline}}
+
+{
+  "prefix": {
+    "ddmore": "http://ddmore.eu/workflow",
+    "vcs": "http://ddmore.eu/workflow/vcs",
+    "repo": {{> json contents=payload.repositoryUri}}
+  },
+
+  "bundle": {
+    {{> repoUri p1=payload.commitId}}: {
+      "entity": {
+        {{#each payload.files}}{{> entityPartial}}{{/each}}
+      },
+      "activity": {
+      },
+      {{#if payload.committer}}
+      "agent": { 
+        {{> repoUri p1=payload.committer.name}}: {  {{! TODO this is probably better being the email }}
+           "vcs:name": {{> json contents=payload.committer.name}},
+           "vcs:email": {{> json contents=payload.committer.email}},
+           "prov:type": {
+               "$": "prov:Person",
+               "type": "xsd:QName"
+           }
+         }
+      },
+      {{/if}}
+      "wasDerivedFrom": {
+        {{#each payload.files}}{{#if this.previousRevision}}{{derivedSeparator}}{{#assign "derivedSeparator"}},{{/assign}}
+        {{> derivedFromPartial}}
+        {{/if}}
+        {{/each}}
+      },
+      "wasAttributedTo": {
+        {{#each payload.files}}{{> attributedToPartial}}{{/each}}
+      },
+      "mentionOf": {
+        {{#each payload.files}}
+        {{#if this.previousRevision}}{{mentionSeparator}}{{#assign "mentionSeparator"}},{{/assign}}
+        {{> mentionOfPartial}}
+        {{/if}}
+        {{/each}}
+      }
+    }
+  }
+}
+

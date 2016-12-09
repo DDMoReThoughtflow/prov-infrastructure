@@ -1,0 +1,219 @@
+{
+	"headers": {
+		"templateName": "git/commit"
+	},
+	"payload": {
+		"committer":{
+			"name":"John Doe",
+			"email":"johndoe@example.com"
+		},
+		"message": "Added readme\\n",
+		"commitDate": "2016-01-28T15:31:55.000Z",
+		"commitId": "ccafeeadbf7c7e422f27824ff44925a276859064",
+		"repositoryUri": "http://gitrepo.com/johndoe/johndoe-repo.git",
+		"repositoryType":"git",
+		"branchName":"master",
+		"files":
+			[{
+				"changeType": "ADD",
+				"oldPath": null,
+				"newPath": "LICENCE",
+				"path": "LICENCE",
+				"checksumType": "SHA1",
+				"checksum": "70f0d0b0de70d47c25ca0ee5d888015e37e1c43b",
+				"previousRevision": null
+			},
+			{
+				"changeType": "MODIFY",
+				"oldPath": "README.md",
+				"newPath": "README.md",
+				"path": "README.md",
+				"checksumType": "SHA1",
+				"checksum": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+				"previousRevision": "2879016a4375c40baf13d65ced5317279908d994"
+			},
+			{
+				"changeType": "MODIFY",
+				"oldPath": "CONTRIBUTE.md",
+				"newPath": "CONTRIBUTE.md",
+				"path": "CONTRIBUTE.md",
+				"checksumType": "SHA1",
+				"checksum": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+				"previousRevision": "2879016a4375c40baf13d65ced5317279908d994"
+			}]
+	},
+	"expected": {
+	  "prefix": {
+	    "ddmore": "http://ddmore.eu/workflow",
+	    "vcs": "http://ddmore.eu/workflow/vcs",
+	    "repo": "http://gitrepo.com/johndoe/johndoe-repo.git",
+	    "bundleId": "repo:ccafeeadbf7c7e422f27824ff44925a276859064"
+	  },
+	
+	      "entity": {
+	  	
+	        "repo:ccafeeadbf7c7e422f27824ff44925a276859064/LICENCE": {
+	          "prov:label": "Created LICENCE",
+	          "prov:type": "document",
+	          "prov:time": "2016-01-28T15:31:55.000Z",
+	          "prov:location": "/LICENCE",
+	          "vcs:sha1": {
+	            "$": "70f0d0b0de70d47c25ca0ee5d888015e37e1c43b",
+	            "type": "xsd:hexBinary"
+	          },
+	          "vcs:changeType": "ADD",
+	          "vcs:commitId": {
+	            "$": "ccafeeadbf7c7e422f27824ff44925a276859064",
+	            "type": "xsd:hexBinary"
+	          },
+	          "vcs:repo": {
+	            "$": "http://gitrepo.com/johndoe/johndoe-repo.git",
+	            "type": "xsd:string"
+	          },
+	          "vcs:type": {
+	          	"$": "git",
+	          	"type": "xsd:string"
+	          },
+	          "vcs:branch": {
+	          	"$": "master",
+	          	"type": "xsd:string"
+	          },
+	          "vcs:message": {
+		          "$": "Added readme\\n",
+		          "type": "xsd:string"
+	          }
+	        },
+	        "repo:ccafeeadbf7c7e422f27824ff44925a276859064/README.md": {
+	          "prov:label": "Modified README.md",
+	          "prov:type": "document",
+	          "prov:time": "2016-01-28T15:31:55.000Z",
+	          "prov:location": "/README.md",
+	          "vcs:sha1": {
+	            "$": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+	            "type": "xsd:hexBinary"
+	          },
+	          "vcs:changeType": "MODIFY",
+	          "vcs:commitId": {
+	            "$": "ccafeeadbf7c7e422f27824ff44925a276859064",
+	            "type": "xsd:hexBinary"
+	          },
+	          "vcs:repo": {
+	            "$": "http://gitrepo.com/johndoe/johndoe-repo.git",
+	            "type": "xsd:string"
+	          },
+	          "vcs:type": {
+	          	"$": "git",
+	          	"type": "xsd:string"
+	          },
+	          "vcs:branch": {
+	          	"$": "master",
+	          	"type": "xsd:string"
+	          },
+	          "vcs:message": {
+		          "$": "Added readme\\n",
+		          "type": "xsd:string"
+	          }
+	        },
+	        "repo:2879016a4375c40baf13d65ced5317279908d994/README.md": {
+		        "prov:label": "README.md"
+	        },
+	        
+	        "repo:ccafeeadbf7c7e422f27824ff44925a276859064/CONTRIBUTE.md": {
+	          "prov:label": "Modified CONTRIBUTE.md",
+	          "prov:type": "document",
+	          "prov:time": "2016-01-28T15:31:55.000Z",
+	          "prov:location": "/CONTRIBUTE.md",
+	          "vcs:sha1": {
+	            "$": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+	            "type": "xsd:hexBinary"
+	          },
+	          "vcs:changeType": "MODIFY",
+	          "vcs:commitId": {
+	            "$": "ccafeeadbf7c7e422f27824ff44925a276859064",
+	            "type": "xsd:hexBinary"
+	          },
+	          "vcs:repo": {
+	            "$": "http://gitrepo.com/johndoe/johndoe-repo.git",
+	            "type": "xsd:string"
+	          },
+	          "vcs:type": {
+	          	"$": "git",
+	          	"type": "xsd:string"
+	          },
+	          "vcs:branch": {
+	          	"$": "master",
+	          	"type": "xsd:string"
+	          },
+	          "vcs:message": {
+		          "$": "Added readme\\n",
+		          "type": "xsd:string"
+	          }
+	        },
+	        "repo:2879016a4375c40baf13d65ced5317279908d994/CONTRIBUTE.md": {
+	        	"prov:label": "CONTRIBUTE.md"
+	        }
+	  	
+	      },
+	      "activity": {
+	      },
+	      "agent": {
+	        "repo:John Doe": {
+	           "prov:label": "John Doe",
+	           "vcs:name": "John Doe",
+	           "vcs:email": "johndoe@example.com",
+	           "prov:type": {
+	               "$": "prov:Person",
+	               "type": "xsd:QName"
+	           }
+	         }
+	      },
+          "wasDerivedFrom": {
+            "_:revision_of_1": {
+	          "prov:usedEntity": "repo:2879016a4375c40baf13d65ced5317279908d994/README.md",
+	          "prov:generatedEntity": "repo:ccafeeadbf7c7e422f27824ff44925a276859064/README.md",
+	          "prov:type": {
+	              "$": "prov:Revision",
+	              "type": "xsd:QName"
+	          }
+	        },
+            "_:revision_of_2": {
+	          "prov:usedEntity": "repo:2879016a4375c40baf13d65ced5317279908d994/CONTRIBUTE.md",
+	          "prov:generatedEntity": "repo:ccafeeadbf7c7e422f27824ff44925a276859064/CONTRIBUTE.md",
+	          "prov:type": {
+	              "$": "prov:Revision",
+	              "type": "xsd:QName"
+	          }
+	        }
+	      },
+	      "wasAttributedTo": {
+	        "_:attributed_to_0": {
+	            "prov:type": "authorship",
+	            "prov:agent": "repo:John Doe",
+	            "prov:entity": "repo:ccafeeadbf7c7e422f27824ff44925a276859064/LICENCE"
+	        },
+	        "_:attributed_to_1": {
+	            "prov:type": "authorship",
+	            "prov:agent": "repo:John Doe",
+	            "prov:entity": "repo:ccafeeadbf7c7e422f27824ff44925a276859064/README.md"
+	        },
+	        "_:attributed_to_2": {
+	            "prov:type": "authorship",
+	            "prov:agent": "repo:John Doe",
+	            "prov:entity": "repo:ccafeeadbf7c7e422f27824ff44925a276859064/CONTRIBUTE.md"
+	        }
+	        
+	      },
+	      "mentionOf": {
+	        "_:mention_of_1": {
+	          "prov:specificEntity": "repo:ccafeeadbf7c7e422f27824ff44925a276859064/README.md",
+	          "prov:generalEntity": "repo:2879016a4375c40baf13d65ced5317279908d994/README.md",
+	          "prov:bundle": "repo:2879016a4375c40baf13d65ced5317279908d994"
+	        },
+	        "_:mention_of_2": {
+	          "prov:specificEntity": "repo:ccafeeadbf7c7e422f27824ff44925a276859064/CONTRIBUTE.md",
+	          "prov:generalEntity": "repo:2879016a4375c40baf13d65ced5317279908d994/CONTRIBUTE.md",
+	          "prov:bundle": "repo:2879016a4375c40baf13d65ced5317279908d994"
+	        }
+	      }
+	    }
+}
